@@ -1,0 +1,16 @@
+{
+  "name": "Phiêu Lưu Toán 3",
+  "short_name": "Toán 3",
+  "description": "Game học Toán lớp 3 theo sách Kết nối tri thức",
+  "lang": "vi",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#D4F0FF",
+  "theme_color": "#7CCBFF",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

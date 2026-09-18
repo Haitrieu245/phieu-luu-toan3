@@ -1,0 +1,5 @@
+# File sinh ra bởi build.sh — không cần đưa lên GitHub
+app.html
+index.html
+dist/
+*.zip
