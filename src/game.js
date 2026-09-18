@@ -51,12 +51,12 @@ const sfx={
   pour(){tone(420,.35,'sine',.08,0,180)},
   win(){[523,659,784,1047].forEach((f,i)=>tone(f,.28,'triangle',.14,i*.13))},
 };
-function speak(text){
+function speak(text,pitch=1){
   if(!('speechSynthesis' in window))return;
   try{
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(text.replace(/<[^>]+>/g,' ').replace(/×/g,' nhân ').replace(/ : /g,' chia ').replace(/−/g,' trừ ').replace(/\?/g,' mấy ').replace(/ l\b/g,' lít'));
-    u.lang='vi-VN';u.rate=.9;
+    u.lang='vi-VN';u.rate=.9;u.pitch=pitch;
     const v=speechSynthesis.getVoices().find(v=>/^vi/i.test(v.lang));if(v)u.voice=v;
     speechSynthesis.speak(u);
   }catch(e){}
@@ -66,7 +66,7 @@ function speak(text){
 const KINDS={kp:'Khám phá',hd:'Hoạt động',lt:'Luyện tập',gt:'Giải toán',dv:'Đố vui'};
 const PRAISE=['Giỏi quá!','Chính xác!','Tuyệt vời!','Đúng rồi!','Siêu quá!','Xuất sắc!'];
 const OOPS=['Chưa đúng rồi!','Thử lại nhé!','Gần đúng rồi!'];
-function show(id){['home','lesson','play'].forEach(s=>$('#'+s).hidden=s!==id)}
+function show(id){['home','lesson','play','pet'].forEach(s=>$('#'+s).hidden=s!==id)}
 const totalStars=()=>Object.values(S.stars).reduce((a,b)=>a+b,0);
 const lvKey=(L,i)=>`b${L.id}-${i}`;
 const lvOpen=(L,i)=>S.unlockAll||i===0||(S.stars[lvKey(L,i-1)]||0)>0;
@@ -94,6 +94,7 @@ function renderHome(){
   let got=0,all=0;
   $('#shelf').innerHTML=LESSONS.map(L=>`<div class="shelf-lesson"><b>Bài ${L.id}</b><div class="shelf-row">${L.levels.map((lv,i)=>{all++;const has=S.stickers.includes(lvKey(L,i));if(has)got++;return has?`<span class="stk" title="${lv.name}">${lv.icon}</span>`:`<span class="stk empty">?</span>`}).join('')}</div></div>`).join('');
   $('#stkCount').textContent=`(${got}/${all})`;
+  renderPetCard();
   let nowSet=false;
   drawMap($('#homeMap'),LESSONS.map(L=>{
     const st=lessonStars(L),done=L.levels.every((_,i)=>S.stars[lvKey(L,i)]);
@@ -178,13 +179,14 @@ function finishLevel(ctx,L,i,o){
   const key=lvKey(L,i),lv=L.levels[i],coins=stars*10;
   S.stars[key]=Math.max(S.stars[key]||0,stars);S.coins+=coins;
   const newSticker=!S.stickers.includes(key);if(newSticker)S.stickers.push(key);
+  const petLine=petReward(stars);
   save();ctx.progress(1);sfx.win();confetti();botMood('happy');
   const hasNext=i+1<L.levels.length;
   const msg=stars===3?'Con làm xuất sắc!':stars===2?'Con làm tốt lắm!':'Con đã hoàn thành rồi!';
   openModal(`<h2>${msg}</h2>
     <div class="big-stars">${[0,1,2].map(j=>`<span class="${j<stars?'':'off'}" style="animation-delay:${.2+j*.25}s">⭐</span>`).join('')}</div>
     <p style="margin:0;font-weight:800;color:var(--ink-2)">${ctx.mistakes===0?'Không sai câu nào!':`Số lần chọn sai: ${ctx.mistakes}`}</p>
-    <div class="reward"><span class="pill">+${coins} 🪙</span>${newSticker?`<span class="pill">Hình dán mới: ${lv.icon}</span>`:''}</div>
+    <div class="reward"><span class="pill">+${coins} 🪙</span>${newSticker?`<span class="pill">Hình dán mới: ${lv.icon}</span>`:''}${petLine}</div>
     <div class="mbtns">
       ${hasNext?`<button class="btn go" id="mNext">Màn tiếp theo ➜</button>`:`<button class="btn go" id="mMap">Về bản đồ bài học ➜</button>`}
       <button class="btn ghost" id="mAgain">↻ Chơi lại màn này</button>
@@ -1185,6 +1187,7 @@ $('#btnSettings').onclick=openSettings;
 $('#btnNote').onclick=openNotes;
 $('#lessonBack').onclick=()=>{show('home');renderHome()};
 $('#playBack').onclick=exitLevel;
+wirePet();
 $('#btnRead').onclick=()=>speak($('#bubble').textContent);
 if('speechSynthesis' in window)speechSynthesis.getVoices();
 renderHome();

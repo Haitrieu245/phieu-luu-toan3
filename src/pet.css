@@ -1,0 +1,97 @@
+/* ===== Nhà thú cưng ===== */
+.pet-card{display:flex;align-items:center;gap:12px;padding:10px 14px;margin-top:8px}
+.pc-mini{width:74px;height:76px;flex:none;cursor:pointer}
+.pc-mini svg{width:100%;height:100%}
+.pc-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.pc-info b{font-family:var(--display);font-size:18px}
+.pc-info small{font-weight:700;color:var(--ink-2);font-size:13px;line-height:1.35}
+.pet-card .btn{font-size:15px;padding:10px 12px 8px;flex:none}
+
+#pet .top{padding-bottom:4px}
+.pet-head{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+#petName{border:0;background:none;padding:0;text-align:left;font-family:var(--display);font-weight:800;font-size:22px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#petName small{font-size:14px;color:var(--grape-d);margin-left:4px}
+.xpbar{height:8px;border-radius:999px;background:rgba(255,255,255,.7);overflow:hidden;max-width:220px}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--grape),#B79CFF);border-radius:999px;transition:width .5s}
+.pet-scroll{display:flex;flex-direction:column;gap:10px}
+
+.room{position:relative;height:clamp(270px,46vh,380px);border-radius:26px;overflow:hidden;box-shadow:0 6px 0 rgba(36,58,107,.12);touch-action:none}
+.room::after{content:"";position:absolute;left:0;right:0;bottom:0;height:26%;background:var(--floor);border-top:4px solid rgba(0,0,0,.08)}
+.r-home{background:repeating-linear-gradient(90deg,#FFF3D9 0 26px,#FFE9C2 26px 52px);--floor:repeating-linear-gradient(90deg,#D9A066 0 60px,#C98E55 60px 62px)}
+.r-garden{background:linear-gradient(#A8E2FF,#DDF4FF);--floor:linear-gradient(#7DD66B,#5CC24D)}
+.r-beach{background:linear-gradient(#7FD3FF 0 55%,#3FA4DC 55% 74%);--floor:linear-gradient(#FFE3A3,#F5CD7A)}
+.r-night{background:radial-gradient(circle at 30% 20%,#3D4E8F,#1E2A55);--floor:linear-gradient(#3B4A7A,#2B3763)}
+.r-castle{background:linear-gradient(#D9C7FF,#F1E9FF);--floor:repeating-linear-gradient(90deg,#B9A4E8 0 40px,#A993DD 40px 42px)}
+.room-decor span{position:absolute;font-size:34px;z-index:0;pointer-events:none}
+.r-night .p-say{background:#fff}
+.pet-stage{position:absolute;inset:0;z-index:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6%}
+#petBody{width:min(64%,250px);transform-origin:50% 100%;scale:var(--ps,1);cursor:pointer;transition:scale .6s}
+#petBody .pet-svg{width:100%;height:auto;display:block;animation:breathe 3.2s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes breathe{50%{transform:scale(1.02,.98)}}
+.pet-svg .p-tail{transform-origin:150px 164px;animation:wag 1.1s ease-in-out infinite alternate}
+.pet-svg.m-happy .p-tail{animation-duration:.35s}
+.pet-svg.m-sad .p-tail{animation:none}
+@keyframes wag{from{transform:rotate(-8deg)}to{transform:rotate(10deg)}}
+.pet-svg .p-wing{transform-box:fill-box;transform-origin:20% 50%}
+.pet-svg.m-happy .p-wing{animation:flap .3s infinite alternate}
+@keyframes flap{to{transform:rotate(-25deg)}}
+.pet-svg .p-eye{transform-box:fill-box;transform-origin:center;animation:blink 4.5s infinite}
+.pet-svg .chomp{transform-box:fill-box;transform-origin:center;animation:chomp .22s infinite alternate}
+@keyframes chomp{from{transform:scaleY(.25)}to{transform:scaleY(1)}}
+#petBody.jump{animation:pjump .7s cubic-bezier(.3,1.5,.5,1)}
+@keyframes pjump{40%{translate:0 -46px}70%{translate:0 0;scale:calc(var(--ps,1)*1.05) calc(var(--ps,1)*.95)}}
+.p-say{position:absolute;left:50%;top:5%;translate:-50% 0;z-index:3;background:#fff;border-radius:18px;padding:8px 14px;font-weight:800;font-size:15px;line-height:1.35;box-shadow:0 4px 0 var(--line);max-width:86%;text-align:center}
+.p-say::after{content:"";position:absolute;left:50%;bottom:-9px;translate:-50% 0;border:10px solid transparent;border-top-color:#fff;border-bottom:0}
+.p-say.pop{animation:pop .25s both}
+.p-float{position:absolute;bottom:45%;font-size:28px;animation:floatUp 1.6s ease-out both;pointer-events:none;z-index:2}
+@keyframes floatUp{from{opacity:0;translate:0 0}20%{opacity:1}to{opacity:0;translate:0 -120px}}
+.p-toy{position:absolute;left:50%;bottom:45%;font-size:36px;z-index:2;pointer-events:none}
+.bathing::before{content:"🛁";position:absolute;left:50%;bottom:-6%;translate:-50% 0;font-size:min(62vw,240px);line-height:1;z-index:2;pointer-events:none;opacity:.95}
+.bubble-f{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,rgba(191,230,255,.55) 60%,rgba(143,217,255,.35));border:2px solid rgba(255,255,255,.9);scale:var(--s);animation:bub 1.6s ease-out both;pointer-events:none;z-index:3}
+@keyframes bub{from{opacity:0;scale:.2}15%{opacity:1;scale:var(--s)}to{opacity:0;translate:0 -50px}}
+.drop{position:absolute;top:-10%;font-size:22px;animation:rain 1s linear both;pointer-events:none;z-index:3}
+@keyframes rain{to{translate:0 320px}}
+
+.pet-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pstat{display:flex;align-items:center;gap:6px;background:#fff;border-radius:14px;padding:6px 8px;box-shadow:0 3px 0 var(--line)}
+.pstat span{font-size:18px}
+.pstat i{flex:1;height:10px;border-radius:999px;background:#EEF3FB;overflow:hidden}
+.pstat b{display:block;height:100%;border-radius:999px;transition:width .4s}
+.pet-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pa{border:0;border-radius:18px;background:#fff;box-shadow:0 4px 0 var(--line);padding:8px 4px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:800;font-size:13px;color:var(--ink)}
+.pa span{font-size:26px;line-height:1.1}
+.pa:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+.pa.rec{background:var(--coral);color:#fff;box-shadow:0 4px 0 var(--coral-d);animation:pulse 1s infinite}
+.pet-tray{background:#fff;border-radius:20px;padding:10px 12px;box-shadow:0 4px 0 var(--line)}
+.tray-t{margin:0 0 8px;font-weight:800;text-align:center}
+.tray-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.tray-it{border:0;width:62px;height:62px;border-radius:16px;background:var(--sun-2);font-size:32px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;box-shadow:0 3px 0 #F4DDA6}
+.tray-it small{font-size:12px;font-weight:800;margin-top:2px}
+.tray-it.more{background:#EEF3FB;box-shadow:0 3px 0 var(--line);font-size:24px}
+.pet-switch{display:flex;gap:8px;justify-content:center}
+.pet-switch:empty{display:none}
+.ps-av{width:58px;height:58px;border-radius:50%;border:3px solid #fff;background:var(--sky-2);padding:4px;box-shadow:0 3px 0 var(--line)}
+.ps-av.on{border-color:var(--sun);background:var(--sun-2)}
+.ps-av svg{width:100%;height:100%}
+
+.adopt{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin:12px 0}
+.ad-card{border:3px solid transparent;border-radius:18px;background:var(--sky-2);padding:6px;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:var(--display);font-size:17px}
+.ad-card.on{border-color:var(--sun);background:var(--sun-2)}
+.ad-card svg{width:80px;height:84px}
+.ad-l{display:block;font-weight:800;text-align:left;margin:4px 2px}
+.ad-in{width:100%;font:800 20px var(--display);padding:10px 14px;border-radius:14px;border:3px solid var(--line);color:var(--ink);margin-bottom:12px;background:#fff}
+.ad-in:focus{outline:none;border-color:var(--grape)}
+.pq-pet{width:110px;height:114px;margin:0 auto}
+.pq-pet svg{width:100%;height:100%}
+.shop-tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 2px 8px;margin:6px 0}
+.stab{flex:none;border:0;border-radius:999px;padding:7px 12px;background:#EEF3FB;font-weight:800;font-size:14px}
+.stab.on{background:var(--grape);color:#fff}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin-bottom:14px}
+.shop-it{border:0;border-radius:16px;background:#F5F8FE;box-shadow:0 3px 0 var(--line);padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.shop-it .si-e{font-size:34px;line-height:1.1}
+.shop-it .si-pet svg{width:62px;height:64px}
+.shop-it b{font-size:13px}
+.shop-it small{font-size:12px;font-weight:800;color:var(--coral-d)}
+.shop-it.own small{color:var(--grass-d)}
+.shop-it.on{background:var(--grass-2)}
+.cl-h{font-size:17px;text-align:left;margin:10px 0 6px}

@@ -3,3 +3,4 @@ app.html
 index.html
 dist/
 *.zip
+.test/

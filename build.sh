@@ -6,8 +6,8 @@
 cd "$(dirname "$0")"
 python3 - <<'PY'
 import hashlib,json,os,shutil
-s=open('src/shell.html').read().replace('/*EXTRA_CSS*/',open('src/extra.css').read())
-s+='<script>\n'+open('src/game.js').read()+'\n</script>\n'
+s=open('src/shell.html').read().replace('/*EXTRA_CSS*/',open('src/extra.css').read()+open('src/pet.css').read())
+s+='<script>\n'+open('src/pet.js').read()+'\n'+open('src/game.js').read()+'\n</script>\n'
 open('app.html','w').write(s)
 head,rest=s.split('</style>',1)
 meta='<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#7CCBFF">\n'
