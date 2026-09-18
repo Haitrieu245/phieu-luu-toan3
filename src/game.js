@@ -1171,11 +1171,29 @@ function openSettings(){
     ${row('tSound','Âm thanh','Tiếng “ting” khi trả lời',S.sound)}
     ${row('tRead','Tự đọc câu hỏi','Dùng giọng đọc tiếng Việt của máy (nếu có)',S.autoRead)}
     ${row('tUnlock','Mở khoá mọi màn','Dành cho phụ huynh xem trước',S.unlockAll)}
-    <div class="mbtns" style="margin-top:16px"><button class="btn go" id="sClose">Xong</button><button class="btn ghost" id="sReset">Xoá toàn bộ tiến độ</button></div>`);
+    <div class="mbtns" style="margin-top:16px"><button class="btn go" id="sClose">Xong</button><button class="btn ghost" id="sReset">Xoá tiến độ học (giữ thú cưng)</button><button class="btn danger" id="sWipe">🗑️ Xoá toàn bộ dữ liệu</button></div>`);
   const bind=(id,k)=>{$('#'+id).onclick=e=>{S[k]=!S[k];e.currentTarget.setAttribute('aria-pressed',S[k]);save();sfx.pop()}};
   bind('tSound','sound');bind('tRead','autoRead');bind('tUnlock','unlockAll');
   $('#sClose').onclick=()=>{closeModal();renderHome()};
-  $('#sReset').onclick=()=>{if(confirm('Xoá hết sao, xu và hình dán?')){S.stars={};S.coins=0;S.stickers=[];save();closeModal();renderHome()}};
+  $('#sReset').onclick=()=>{if(confirm('Xoá hết sao, xu và hình dán? Thú cưng vẫn được giữ lại.')){S.stars={};S.coins=0;S.stickers=[];save();closeModal();renderHome()}};
+  $('#sWipe').onclick=confirmWipe;
+}
+// Xoá sạch mọi dữ liệu trên máy này: sao, xu, hình dán, thú cưng, đồ đã mua, cài đặt.
+// Nút xác nhận khoá 3 giây để bé không lỡ tay bấm nhầm.
+function confirmWipe(){
+  openModal(`<h2>Xoá toàn bộ dữ liệu?</h2>
+    <p style="font-weight:700;line-height:1.5;text-align:left">Những thứ sau sẽ bị xoá vĩnh viễn trên máy này và <b>không lấy lại được</b>:</p>
+    <ul style="text-align:left;font-weight:700;line-height:1.7;margin:0 0 14px;padding-left:22px"><li>Tất cả sao, xu và hình dán</li><li>Tất cả thú cưng, đồ ăn, đồ chơi, mũ, kính, phòng đã mua</li><li>Các cài đặt (âm thanh, tự đọc, mở khoá)</li></ul>
+    <div class="mbtns"><button class="btn danger" id="wYes" disabled>Xoá hết (3)</button><button class="btn go" id="wNo">Không, giữ lại</button></div>`);
+  let n=3;const b=$('#wYes');
+  const t=setInterval(()=>{n--;if(!b.isConnected){clearInterval(t);return}if(n>0)b.textContent=`Xoá hết (${n})`;else{clearInterval(t);b.textContent='Xoá hết';b.disabled=false}},1000);
+  $('#wNo').onclick=()=>{clearInterval(t);closeModal()};
+  b.onclick=()=>{
+    clearInterval(t);
+    if(typeof petStopRec==='function')petStopRec();
+    try{localStorage.removeItem(SAVE_KEY)}catch(e){}
+    location.reload();
+  };
 }
 function openNotes(){
   openModal(`<h2>Sổ tay Bài ${curLesson.id}</h2>${curLesson.note()}<button class="btn go" id="nClose">Đóng</button>`);
