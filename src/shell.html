@@ -47,11 +47,6 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1;text-wrap:balance}
 .pill{background:var(--paper);border-radius:999px;padding:6px 12px;font-weight:800;font-size:16px;box-shadow:0 3px 0 var(--line);white-space:nowrap;font-variant-numeric:tabular-nums}
 
 .card{background:var(--paper);border-radius:24px;box-shadow:0 6px 0 rgba(36,58,107,.12)}
-.shelf{padding:14px 16px;margin-top:6px}
-.shelf h2{font-size:18px}
-.shelf-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.stk{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-size:28px;background:var(--sun-2);border:2px dashed transparent}
-.stk.empty{background:#EEF3FB;border-color:var(--line);font-size:18px;color:var(--line);filter:grayscale(1)}
 .sec-h{font-size:20px;margin:18px 4px 0;color:var(--ink)}
 
 /* map */
@@ -261,14 +256,13 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1;text-wrap:balance}
   <section id="home" class="screen">
     <header class="top">
       <div class="brand"><span data-bot></span><div><h1>Phiêu Lưu Toán 3</h1><p>Theo sách Toán 3 · Kết nối tri thức</p></div></div>
-      <div class="stats"><span class="pill">⭐ <b id="hStars">0</b></span><span class="pill">🪙 <b id="hCoins">0</b></span></div>
+      <div class="stats"><span class="pill">⭐ <b id="hStars">0</b></span></div>
       <button class="icon-btn" id="btnSettings" aria-label="Cài đặt">⚙️</button>
     </header>
     <div class="scroll">
       <div class="card pet-card" id="petCard"></div>
       <h2 class="sec-h">Bản đồ phiêu lưu</h2>
       <div class="map" id="homeMap"></div>
-      <div class="card shelf"><h2>Bộ hình dán của con <span id="stkCount"></span></h2><div id="shelf"></div></div>
     </div>
   </section>
 
@@ -295,24 +289,18 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1;text-wrap:balance}
   <section id="pet" class="screen" hidden>
     <header class="top">
       <button class="icon-btn" id="petBack" aria-label="Về trang chủ">←</button>
-      <div class="pet-head"><button id="petName" aria-label="Đổi tên"></button><div class="xpbar"><i id="petXp"></i></div></div>
-      <span class="pill">🪙 <b id="petCoins">0</b></span>
+      <div class="pet-head"><button id="petName" aria-label="Đổi tên"></button><div class="xprow"><div class="xpbar"><i id="petXp"></i></div><small id="petNext"></small></div></div>
     </header>
     <div class="scroll pet-scroll">
-      <div class="room" id="room"><div class="room-decor" id="roomDecor"></div><div class="p-say" id="petSay" hidden></div><div class="pet-stage" id="petStage"><div id="petBody"></div></div></div>
+      <div class="room r-home" id="room"><div class="room-decor"><span style="left:6%;top:62%">🪴</span><span style="left:74%;top:10%">🖼️</span><span style="left:84%;top:66%">🧸</span></div><div class="p-say" id="petSay" hidden></div><div class="pet-stage" id="petStage"><div id="petBody"></div></div></div>
       <div class="pet-stats" id="petStats"></div>
       <div class="pet-tray" id="petTray" hidden></div>
       <div class="pet-actions">
         <button class="pa" id="pFeed"><span>🍽️</span>Cho ăn</button>
-        <button class="pa" id="pPlay"><span>🎾</span>Chơi</button>
-        <button class="pa" id="pBath"><span>🛁</span>Tắm</button>
-        <button class="pa" id="pQuiz"><span>🧠</span>Đố vui</button>
-        <button class="pa" id="pRec"><span>🎤</span>Nhại giọng</button>
-        <button class="pa" id="pShop"><span>🛒</span>Cửa hàng</button>
-        <button class="pa" id="pCloset"><span>👕</span>Tủ đồ</button>
-        <button class="pa" id="pHome" onclick="document.getElementById('petBack').click()"><span>🗺️</span>Đi học</button>
+        <button class="pa" id="pDrink"><span>🥤</span>Cho uống</button>
+        <button class="pa" id="pWear"><span>👕</span>Mặc đồ</button>
+        <button class="pa go" id="pLearn"><span>📚</span>Đi học</button>
       </div>
-      <div class="pet-switch" id="petSwitch"></div>
     </div>
   </section>
 

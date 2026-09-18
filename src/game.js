@@ -27,7 +27,7 @@ const PINWHEEL=`<svg viewBox="0 0 40 42" aria-hidden="true"><line x1="20" y1="20
 
 /* ---------- save ---------- */
 const SAVE_KEY='phieu-luu-toan3-v1';
-const S={stars:{},coins:0,stickers:[],sound:true,autoRead:false,unlockAll:false};
+const S={stars:{},sound:true,autoRead:false,unlockAll:false};
 try{Object.assign(S,JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'))}catch(e){}
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}}
 
@@ -90,10 +90,7 @@ function drawMap(host,items){
 }
 
 function renderHome(){
-  $('#hStars').textContent=totalStars();$('#hCoins').textContent=S.coins;
-  let got=0,all=0;
-  $('#shelf').innerHTML=LESSONS.map(L=>`<div class="shelf-lesson"><b>Bài ${L.id}</b><div class="shelf-row">${L.levels.map((lv,i)=>{all++;const has=S.stickers.includes(lvKey(L,i));if(has)got++;return has?`<span class="stk" title="${lv.name}">${lv.icon}</span>`:`<span class="stk empty">?</span>`}).join('')}</div></div>`).join('');
-  $('#stkCount').textContent=`(${got}/${all})`;
+  $('#hStars').textContent=totalStars();
   renderPetCard();
   let nowSet=false;
   drawMap($('#homeMap'),LESSONS.map(L=>{
@@ -176,17 +173,16 @@ function finishLevel(ctx,L,i,o){
   if(!ctx.alive)return;ctx.end();
   let stars=ctx.mistakes<=1?3:ctx.mistakes<=4?2:1;
   if(o.penalty)stars=Math.max(1,stars-1);
-  const key=lvKey(L,i),lv=L.levels[i],coins=stars*10;
-  S.stars[key]=Math.max(S.stars[key]||0,stars);S.coins+=coins;
-  const newSticker=!S.stickers.includes(key);if(newSticker)S.stickers.push(key);
-  const petLine=petReward(stars);
+  const key=lvKey(L,i),lvBefore=petLevel();
+  S.stars[key]=Math.max(S.stars[key]||0,stars);
+  const gifts=petRewards(L,stars,lvBefore);
   save();ctx.progress(1);sfx.win();confetti();botMood('happy');
   const hasNext=i+1<L.levels.length;
   const msg=stars===3?'Con làm xuất sắc!':stars===2?'Con làm tốt lắm!':'Con đã hoàn thành rồi!';
   openModal(`<h2>${msg}</h2>
     <div class="big-stars">${[0,1,2].map(j=>`<span class="${j<stars?'':'off'}" style="animation-delay:${.2+j*.25}s">⭐</span>`).join('')}</div>
     <p style="margin:0;font-weight:800;color:var(--ink-2)">${ctx.mistakes===0?'Không sai câu nào!':`Số lần chọn sai: ${ctx.mistakes}`}</p>
-    <div class="reward"><span class="pill">+${coins} 🪙</span>${newSticker?`<span class="pill">Hình dán mới: ${lv.icon}</span>`:''}${petLine}</div>
+    <p class="reward-t">Phần thưởng cho thú cưng:</p><div class="reward">${gifts}</div>
     <div class="mbtns">
       ${hasNext?`<button class="btn go" id="mNext">Màn tiếp theo ➜</button>`:`<button class="btn go" id="mMap">Về bản đồ bài học ➜</button>`}
       <button class="btn ghost" id="mAgain">↻ Chơi lại màn này</button>
@@ -904,7 +900,6 @@ function polySVG(lens,unit='cm',deco){
 
 /* ================= NỘI DUNG CÁC BÀI ================= */
 const known=[2,3,4,5];
-const L5_ICONS=['🛺','🐸','🐝','☕','🏎️','♟️'];
 function tableNote(n){
   const tb=(title,rows)=>`<div class="ttable"><div class="tt-h">${title}</div>${rows.map(([l,v])=>`<div class="tr done"><span>${l}</span><span>=</span><span class="v">${v}</span></div>`).join('')}</div>`;
   return`<div class="note-grid">${tb('Bảng nhân '+n,tableRows(n,'×'))}${tb('Bảng chia '+n,tableRows(n,':'))}</div>
@@ -1162,7 +1157,6 @@ const LESSONS=[
 ];
 
 /* chuyển hình dán kiểu cũ (lưu theo biểu tượng) sang kiểu mới (lưu theo màn chơi) */
-S.stickers=S.stickers.map(s=>{const i=L5_ICONS.indexOf(s);return i>=0?`b5-${i}`:s});save();
 
 /* ---------- settings & notes ---------- */
 function openSettings(){
@@ -1171,11 +1165,10 @@ function openSettings(){
     ${row('tSound','Âm thanh','Tiếng “ting” khi trả lời',S.sound)}
     ${row('tRead','Tự đọc câu hỏi','Dùng giọng đọc tiếng Việt của máy (nếu có)',S.autoRead)}
     ${row('tUnlock','Mở khoá mọi màn','Dành cho phụ huynh xem trước',S.unlockAll)}
-    <div class="mbtns" style="margin-top:16px"><button class="btn go" id="sClose">Xong</button><button class="btn ghost" id="sReset">Xoá tiến độ học (giữ thú cưng)</button><button class="btn danger" id="sWipe">🗑️ Xoá toàn bộ dữ liệu</button></div>`);
+    <div class="mbtns" style="margin-top:16px"><button class="btn go" id="sClose">Xong</button><button class="btn danger" id="sWipe">🗑️ Xoá toàn bộ dữ liệu</button></div>`);
   const bind=(id,k)=>{$('#'+id).onclick=e=>{S[k]=!S[k];e.currentTarget.setAttribute('aria-pressed',S[k]);save();sfx.pop()}};
   bind('tSound','sound');bind('tRead','autoRead');bind('tUnlock','unlockAll');
   $('#sClose').onclick=()=>{closeModal();renderHome()};
-  $('#sReset').onclick=()=>{if(confirm('Xoá hết sao, xu và hình dán? Thú cưng vẫn được giữ lại.')){S.stars={};S.coins=0;S.stickers=[];save();closeModal();renderHome()}};
   $('#sWipe').onclick=confirmWipe;
 }
 // Xoá sạch mọi dữ liệu trên máy này: sao, xu, hình dán, thú cưng, đồ đã mua, cài đặt.
@@ -1183,7 +1176,7 @@ function openSettings(){
 function confirmWipe(){
   openModal(`<h2>Xoá toàn bộ dữ liệu?</h2>
     <p style="font-weight:700;line-height:1.5;text-align:left">Những thứ sau sẽ bị xoá vĩnh viễn trên máy này và <b>không lấy lại được</b>:</p>
-    <ul style="text-align:left;font-weight:700;line-height:1.7;margin:0 0 14px;padding-left:22px"><li>Tất cả sao, xu và hình dán</li><li>Tất cả thú cưng, đồ ăn, đồ chơi, mũ, kính, phòng đã mua</li><li>Các cài đặt (âm thanh, tự đọc, mở khoá)</li></ul>
+    <ul style="text-align:left;font-weight:700;line-height:1.7;margin:0 0 14px;padding-left:22px"><li>Tất cả sao học tập</li><li>Thú cưng, thức ăn, nước uống và trang phục</li><li>Các cài đặt (âm thanh, tự đọc, mở khoá)</li></ul>
     <div class="mbtns"><button class="btn danger" id="wYes" disabled>Xoá hết (3)</button><button class="btn go" id="wNo">Không, giữ lại</button></div>`);
   let n=3;const b=$('#wYes');
   const t=setInterval(()=>{n--;if(!b.isConnected){clearInterval(t);return}if(n>0)b.textContent=`Xoá hết (${n})`;else{clearInterval(t);b.textContent='Xoá hết';b.disabled=false}},1000);

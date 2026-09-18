@@ -1,12 +1,5 @@
 /* ===== thêm cho Bài 6–12 ===== */
 .k-dv{background:#E0A21A}
-.shelf-lesson{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:2px solid #EEF3FB}
-.shelf-lesson:first-child{border-top:0}
-.shelf-lesson>b{font-family:var(--display);font-size:14px;min-width:46px;color:var(--ink-2)}
-.shelf-lesson .shelf-row{margin:0;gap:6px}
-.shelf-lesson .stk{width:36px;height:36px;font-size:21px;border-radius:10px}
-.shelf-lesson .stk svg{width:26px;height:26px}
-#stkCount{font-size:14px;color:var(--ink-2)}
 .node .ico svg{width:46px;height:46px;display:block}
 
 /* cảnh khám phá */
