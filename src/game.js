@@ -51,11 +51,28 @@ const sfx={
   pour(){tone(420,.35,'sine',.08,0,180)},
   win(){[523,659,784,1047].forEach((f,i)=>tone(f,.28,'triangle',.14,i*.13))},
 };
+// Chuyển nội dung hiển thị thành câu đọc tự nhiên.
+// Dấu "?" đứng riêng (ô trống: "3 × ? = 12", "dài ? cm") đọc là "mấy";
+// dấu "?" ngay sau một chữ ("bằng mấy?") là dấu hỏi câu, không đọc thêm.
+const UNIT_WORD={mm:'mi-li-mét',cm:'xăng-ti-mét',dm:'đề-xi-mét',km:'ki-lô-mét',kg:'ki-lô-gam',ml:'mi-li-lít',g:'gam',m:'mét',l:'lít'};
+function toSpeech(text){
+  let t=String(text)
+    .replace(/<span class="frac"><i>1<\/i><i>(\d+)<\/i><\/span>/g,(m,n)=>' một phần '+['','','hai','ba','tư','năm','sáu','bảy','tám','chín','mười'][n]+' ')
+    .replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&gt;/g,'>').replace(/&lt;/g,'<').replace(/&amp;/g,'&')
+    .replace(/°C/g,' độ C').replace(/[➜→]/g,', ');
+  t=t.replace(/([\d?…])\s*(mm|cm|dm|km|kg|ml|g|m|l)(?![\p{L}\d-])/gu,(m,d,u)=>`${d} ${UNIT_WORD[u]}`)
+     .replace(/\((mm|cm|dm|km|kg|ml|g|m|l)\)/g,(m,u)=>`(${UNIT_WORD[u]})`);
+  t=t.replace(/×/g,' nhân ').replace(/\s:\s/g,' chia ').replace(/−/g,' trừ ').replace(/\s\+\s/g,' cộng ').replace(/\s=\s/g,' bằng ')
+     .replace(/\s>\s/g,' lớn hơn ').replace(/\s<\s/g,' bé hơn ');
+  // "?" đứng riêng là ô trống; bỏ nếu ngay trước đã có từ hỏi để không đọc "mấy mấy"
+  t=t.replace(/(^|[\s(=])\?(?=$|[\s).,:;!])/g,(m,pre,off)=>/(mấy|bao nhiêu|gì|nào)\s*$/i.test(t.slice(0,off+pre.length))?pre:pre+'mấy');
+  return t.replace(/\s+/g,' ').trim();
+}
 function speak(text,pitch=1){
   if(!('speechSynthesis' in window))return;
   try{
     speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(text.replace(/<[^>]+>/g,' ').replace(/×/g,' nhân ').replace(/ : /g,' chia ').replace(/−/g,' trừ ').replace(/\?/g,' mấy ').replace(/ l\b/g,' lít'));
+    const u=new SpeechSynthesisUtterance(toSpeech(text));
     u.lang='vi-VN';u.rate=.9;u.pitch=pitch;
     const v=speechSynthesis.getVoices().find(v=>/^vi/i.test(v.lang));if(v)u.voice=v;
     speechSynthesis.speak(u);
@@ -63,7 +80,7 @@ function speak(text,pitch=1){
 }
 
 /* ---------- screens ---------- */
-const KINDS={kp:'Khám phá',hd:'Hoạt động',lt:'Luyện tập',gt:'Giải toán',dv:'Đố vui'};
+const KINDS={kp:'Khám phá',hd:'Hoạt động',lt:'Luyện tập',gt:'Giải toán',dv:'Đố vui',kt:'Đề kiểm tra'};
 const PRAISE=['Giỏi quá!','Chính xác!','Tuyệt vời!','Đúng rồi!','Siêu quá!','Xuất sắc!'];
 const OOPS=['Chưa đúng rồi!','Thử lại nhé!','Gần đúng rồi!'];
 function show(id){['home','lesson','play','pet'].forEach(s=>$('#'+s).hidden=s!==id)}
@@ -82,30 +99,34 @@ function drawMap(host,items){
   host.innerHTML=`<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="road-o" d="${d}"/><path class="road-i" d="${d}"/></svg>`;
   items.forEach((it,i)=>{
     const s=h(`<div class="spot" style="left:${pts[i][0]}%;top:${pts[i][1]}%"></div>`);
-    const b=h(`<button class="node ${it.state}" aria-label="${it.aria}"><span class="ico">${it.icon}</span>${it.state.includes('locked')?'<span class="lock">🔒</span>':''}</button>`);
+    const b=h(`<button class="node ${it.state}" data-key="${it.key??i}" aria-label="${it.aria}"><span class="ico">${it.icon}</span>${it.state.includes('locked')?'<span class="lock">🔒</span>':''}</button>`);
     b.onclick=it.onClick;
     s.appendChild(b);s.appendChild(h(`<div class="cap">${it.cap}</div>`));
     host.appendChild(s);
   });
 }
 
-function renderHome(){
+const lessonTab=L=>L.tab||'Bài '+L.id;
+function renderHome(focus){
   $('#hStars').textContent=totalStars();
   renderPetCard();
   let nowSet=false;
   drawMap($('#homeMap'),LESSONS.map(L=>{
     const st=lessonStars(L),done=L.levels.every((_,i)=>S.stars[lvKey(L,i)]);
     let state=done?'done':'';if(!done&&!nowSet){state+=' now';nowSet=true}
-    return {icon:L.icon,state,aria:`Bài ${L.id}: ${L.title}`,
-      cap:`<b>Bài ${L.id}</b><small>${L.title}</small><span class="st">⭐ ${st}/${L.levels.length*3}</span>`,
+    return {icon:L.icon,state,key:L.id,aria:`${lessonTab(L)}: ${L.title}`,
+      cap:`<b>${lessonTab(L)}</b><small>${L.title}</small><span class="st">⭐ ${st}/${L.levels.length*3}</span>`,
       onClick:()=>openLesson(L)};
   }));
+  // bản đồ dài: cuộn tới bài vừa mở, hoặc bài đang học
+  const n=(focus!=null&&$(`#homeMap .node[data-key="${focus}"]`))||$('#homeMap .node.now');
+  if(n)requestAnimationFrame(()=>n.scrollIntoView({block:'center'}));
 }
 
 let curLesson=null;
 function openLesson(L){
   curLesson=L;show('lesson');
-  $('#lTab').textContent='Bài '+L.id;$('#lTtl').textContent=L.title.toUpperCase();
+  $('#lTab').textContent=lessonTab(L);$('#lTtl').textContent=L.title.toUpperCase();
   let nowSet=false;
   drawMap($('#lessonMap'),L.levels.map((lv,i)=>{
     const st=S.stars[lvKey(L,i)]||0,open=lvOpen(L,i);
@@ -171,7 +192,7 @@ function startLevel(L,i){
 }
 function finishLevel(ctx,L,i,o){
   if(!ctx.alive)return;ctx.end();
-  let stars=ctx.mistakes<=1?3:ctx.mistakes<=4?2:1;
+  let stars=o.stars||(ctx.mistakes<=1?3:ctx.mistakes<=4?2:1);
   if(o.penalty)stars=Math.max(1,stars-1);
   const key=lvKey(L,i),lvBefore=petLevel();
   S.stars[key]=Math.max(S.stars[key]||0,stars);
@@ -181,7 +202,7 @@ function finishLevel(ctx,L,i,o){
   const msg=stars===3?'Con làm xuất sắc!':stars===2?'Con làm tốt lắm!':'Con đã hoàn thành rồi!';
   openModal(`<h2>${msg}</h2>
     <div class="big-stars">${[0,1,2].map(j=>`<span class="${j<stars?'':'off'}" style="animation-delay:${.2+j*.25}s">⭐</span>`).join('')}</div>
-    <p style="margin:0;font-weight:800;color:var(--ink-2)">${ctx.mistakes===0?'Không sai câu nào!':`Số lần chọn sai: ${ctx.mistakes}`}</p>
+    ${o.extra||''}<p style="margin:0;font-weight:800;color:var(--ink-2)">${ctx.mistakes===0?'Không sai câu nào!':`Số lần chọn sai: ${ctx.mistakes}`}</p>
     <p class="reward-t">Phần thưởng cho thú cưng:</p><div class="reward">${gifts}</div>
     <div class="mbtns">
       ${hasNext?`<button class="btn go" id="mNext">Màn tiếp theo ➜</button>`:`<button class="btn go" id="mMap">Về bản đồ bài học ➜</button>`}
@@ -223,7 +244,7 @@ function askChoice(ctx,host,options,correct,{hint,cls='',label}={}){
     });
   });
 }
-function numpad(ctx,host,{max=3,auto=false}={}){
+function numpad(ctx,host,{max=4,auto=false}={}){
   const w=h(`<div class="numpad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="np-k" data-k="${n}">${n}</button>`).join('')}<button class="np-k np-del" data-k="del" aria-label="Xoá">⌫</button><button class="np-k" data-k="0">0</button><button class="np-k np-ok" data-k="ok" aria-label="Kiểm tra">✓</button></div>`);
   let val='',locked=false;
   const api={el:w,target:null,onSubmit:null,
@@ -255,7 +276,14 @@ function askNum(ctx,np,ans,{hint,hintAfter=2}={}){
 }
 const qfmt=s=>s.replace('?','<b class="box">?</b>');
 const tableRows=(a,op)=>Array.from({length:10},(_,i)=>op==='×'?[`${a} × ${i+1}`,a*(i+1)]:[`${a*(i+1)} : ${a}`,i+1]);
-function calc(t){const [a,op,b]=t.split(' ');return op==='×'?a*b:op===':'?a/b:op==='+'?+a + +b:a-b}
+// Tính giá trị biểu thức: + − × : và dấu ngoặc, nhân chia trước, cộng trừ sau.
+function calc(t){
+  const s=String(t).replace(/×/g,'*').replace(/:/g,'/').replace(/−/g,'-').replace(/\s+/g,'');let i=0;
+  const num=()=>{if(s[i]==='('){i++;const v=add();i++;return v}const j=i;while(i<s.length&&/[0-9]/.test(s[i]))i++;return +s.slice(j,i)};
+  const mul=()=>{let v=num();while(s[i]==='*'||s[i]==='/'){const o=s[i++],r=num();v=o==='*'?v*r:v/r}return v};
+  const add=()=>{let v=mul();while(s[i]==='+'||s[i]==='-'){const o=s[i++],r=mul();v=o==='+'?v+r:v-r}return v};
+  return add();
+}
 function apply(v,[op,x]){return op==='×'?v*x:op===':'?v/x:op==='+'?v+x:v-x}
 const lv=(name,kind,icon,run)=>({name,kind,icon,run});
 
@@ -306,12 +334,13 @@ function explore(n,s){return lv(s.name,'kp',s.icon,async ctx=>{
   await ctx.sleep(1600);if(!ctx.alive)return;
   tt.classList.add('masked');
   for(const k of shuffle(range(2,9)).slice(0,5)){
-    row(k).classList.add('cur');
+    // dòng đang hỏi hiện "?" cho tới khi con trả lời đúng, không lộ đáp án
+    row(k).classList.add('cur');$('.v',row(k)).textContent='?';
     q.innerHTML=qfmt(`${n} × ${k} = ?`);np.setTarget($('.box',q));
     ctx.say(`Đố nhanh: ${n} × ${k} bằng bao nhiêu?`);
     await askNum(ctx,np,n*k,{hint:()=>`${n} × ${k-1} = ${n*(k-1)}, thêm ${n} nữa là bao nhiêu?`});
     if(!ctx.alive)return;
-    row(k).classList.remove('cur');done++;ctx.progress(.3+done/TOTAL*.7);
+    $('.v',row(k)).textContent=n*k;row(k).classList.remove('cur');done++;ctx.progress(.3+done/TOTAL*.7);
   }
   ctx.finish();
 })}
@@ -359,12 +388,12 @@ function divExplore(n,k0,icon){return lv(`Bảng chia ${n}`,'kp',icon,async ctx=
   await ctx.sleep(1400);if(!ctx.alive)return;
   tt.classList.add('masked');
   for(const k of shuffle(range(2,9)).slice(0,4)){
-    row(k).classList.add('cur');
+    row(k).classList.add('cur');$('.v',row(k)).textContent='?';
     q.innerHTML=qfmt(`${n*k} : ${n} = ?`);np.setTarget($('.box',q));
     ctx.say(`Đố nhanh: ${n*k} : ${n} = ?`);
     await askNum(ctx,np,k,{hint:()=>`${n} × mấy = ${n*k}?`});
     if(!ctx.alive)return;
-    row(k).classList.remove('cur');done++;ctx.progress(.15+done/TOTAL*.85);
+    $('.v',row(k)).textContent=k;row(k).classList.remove('cur');done++;ctx.progress(.15+done/TOTAL*.85);
   }
   ctx.finish();
 })}
@@ -593,6 +622,7 @@ function selectLv({name,icon,theme='balloon',rounds}){return lv(name,'lt',icon,a
   const bcs=['#FF6B5B','#8A63E8','#48AEE6','#46B85A','#E0A21A','#FF7EB6'];
   for(const r of R){
     const want=r.items.filter(t=>test(r,calc(t))).length;
+    if(!want)continue; // vòng ngẫu nhiên không có đáp án đúng nào thì bỏ qua, tránh treo màn
     st.innerHTML=`<p class="q-t" style="text-align:center">${r.prompt}</p><div class="${theme==='train'?'train':'balloons th-'+theme}" id="its"></div><div class="sel-count" id="cnt"></div>`;
     const its=$('#its',st),cnt=$('#cnt',st);
     if(theme==='train')its.appendChild(h('<span class="loco">🚂</span>'));
@@ -632,7 +662,7 @@ function compareLv({name,icon,pairs:P}){return lv(name,'lt',icon,async ctx=>{
     const va=calc(a),vb=calc(b),sign=va>vb?'>':va<vb?'<':'=';
     beam.style.rotate='0deg';mid.textContent='?';
     pl.innerHTML=`${a}<small></small>`;pr.innerHTML=`${b}<small></small>`;
-    ctx.say(`${a} ? ${b}`);
+    ctx.say(`So sánh ${a} với ${b}. Chọn dấu lớn hơn, bé hơn hoặc bằng.`);
     await askChoice(ctx,ch,['>','<','='],sign,{cls:'sym',hint:()=>`${a} = ${va}, còn ${b} = ${vb}.`});
     if(!ctx.alive)return;
     $('small',pl).textContent='= '+va;$('small',pr).textContent='= '+vb;mid.textContent=sign;
@@ -643,25 +673,47 @@ function compareLv({name,icon,pairs:P}){return lv(name,'lt',icon,async ctx=>{
   ctx.finish();
 })}
 
-/* ----- Quiz tổng quát (chọn đáp án hoặc điền số) ----- */
-function quiz(name,kind,icon,makeQs,intro){return lv(name,kind,icon,async ctx=>{
+/* ----- Quiz tổng quát (chọn đáp án, điền một hay nhiều ô số, đặt tính) -----
+   Câu hỏi: {html, choices, ans, hint} — ans là mảng khi có nhiều ô; {col:[x,op,y]} để đặt tính.
+   opt.exam: chấm điểm theo q.pts (đúng ngay lần đầu: đủ điểm, sai 1 lần: nửa điểm). */
+function quiz(name,kind,icon,makeQs,intro,opt={}){return lv(name,kind,icon,async ctx=>{
   const st=ctx.stage,qs=makeQs();
-  st.innerHTML=`<div class="card qz" id="qz"></div><div id="np" hidden></div>`;
-  const qz=$('#qz',st),npHost=$('#np',st),np=numpad(ctx,npHost);
+  st.innerHTML=`<div class="card qz" id="qz"></div><div id="np" hidden></div><div id="npc" hidden></div>`;
+  const qz=$('#qz',st),npHost=$('#np',st),np=numpad(ctx,npHost),npcHost=$('#npc',st),npc=numpad(ctx,npcHost,{max:1,auto:true});
+  let score=0,maxScore=0;
   if(intro){ctx.say(intro)}
   for(let i=0;i<qs.length;i++){
-    const q=qs[i];
-    qz.innerHTML=`<div class="prob-no">Câu ${i+1} / ${qs.length}</div>${q.html}<div class="choices" id="qc"></div>`;
+    const q=qs[i],m0=ctx.mistakes;
+    qz.innerHTML=`<div class="prob-no">${q.part?`<span class="part">${q.part}</span> `:''}Câu ${i+1} / ${qs.length}${opt.exam&&q.pts?` <span class="pts">(${String(q.pts).replace('.',',')} điểm)</span>`:''}</div>${q.html||''}<div class="choices" id="qc"></div><div id="qcol"></div>`;
     $('#playScroll').scrollTop=0;
     if(q.say||i>0||!intro)ctx.say(q.say||q.html.replace(/<svg[\s\S]*?<\/svg>/g,'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());
-    if(q.choices){npHost.hidden=true;await askChoice(ctx,$('#qc',qz),q.choices,q.ans,{hint:q.hint,cls:q.cls||'',label:q.label})}
-    else{npHost.hidden=false;np.setTarget($('.box',qz));await askNum(ctx,np,q.ans,{hint:q.hint,hintAfter:q.hintAfter||2})}
+    npHost.hidden=npcHost.hidden=true;
+    if(q.choices){
+      const lab=q.abcd?(v=>`<b class="abcd">${'ABCD'[q.choices.indexOf(v)]}.</b> ${q.label?q.label(v):v}`):q.label;
+      await askChoice(ctx,$('#qc',qz),q.choices,q.ans,{hint:q.hint,cls:q.cls||'',label:lab});
+    }else if(q.col){npcHost.hidden=false;await colOne(ctx,$('#qcol',qz),npc,q.col);if(ctx.alive)await ctx.sleep(1200)}
+    else{
+      npHost.hidden=false;
+      const boxes=$$('.box',qz),ans=[].concat(q.ans),hints=[].concat(q.hint);
+      for(let j=0;j<ans.length&&ctx.alive;j++){
+        if(ans.length>1)boxes.forEach((b,k)=>b.classList.toggle('cur',k===j));
+        np.setTarget(boxes[j]);await askNum(ctx,np,ans[j],{hint:hints[j]??hints[0],hintAfter:q.hintAfter||2});
+      }
+      boxes.forEach(b=>b.classList.remove('cur'));
+    }
     if(!ctx.alive)return;
+    if(q.pts){maxScore+=q.pts;const m=ctx.mistakes-m0;score+=m===0?q.pts:m===1?q.pts/2:0}
     ctx.progress((i+1)/qs.length);
-    if(q.explain){ctx.say(q.explain);await ctx.sleep(1700);if(!ctx.alive)return}
+    if(q.explain){ctx.say(q.explain);await ctx.sleep(q.wait||1700);if(!ctx.alive)return}
   }
-  ctx.finish();
+  if(opt.exam){
+    const sc=Math.round(score/maxScore*20)/2,txt=String(sc).replace('.',',');
+    ctx.say(`Con được ${txt} điểm! ${sc>=9?'Xuất sắc!':sc>=7?'Khá lắm! Xem lại các câu sai nhé.':'Mình ôn lại các bài rồi làm lại đề nhé!'}`);
+    await ctx.sleep(1500);if(!ctx.alive)return;
+    ctx.finish({stars:sc>=9?3:sc>=7?2:1,extra:`<p class="exam-score">Điểm bài kiểm tra: <b>${txt}</b> / 10</p>`});
+  }else ctx.finish();
 })}
+const exam=(name,icon,makeQs,intro)=>quiz(name,'kt',icon,makeQs,intro,{exam:true});
 
 /* ----- Giải toán có lời văn ----- */
 function vis(v){
@@ -686,38 +738,61 @@ function wordRandom(n,count=2){
         ops:[`${n*k} : ${n}`,`${n*k} × ${n}`,`${n*k} + ${n}`],ans:k,unit:c,lead:`Số ${c} xếp được là:`,opHint:`Mỗi ${c} ${n} ${u} → chia ${n*k} cho ${n}.`};
   });
 }
-function words({name,icon,fixed,n,extra=2}){return lv(name,'gt',icon,async ctx=>{
-  const st=ctx.stage,probs=[...fixed,...(n?wordRandom(n,extra):[])];
-  const total=probs.reduce((a,p)=>a+(p.direct?1:2),0);let done=0;
+// Gợi ý khi điền kết quả một phép tính trong bài giải
+function opNumHint(e){
+  const t=e.split(' ');if(t.length!==3)return`Tính lần lượt từng bước: ${e}`;
+  const [x,op,y]=t;
+  if(op==='×')return +x<=10&&+y<=10?`Nhớ bảng nhân: ${x} × ${y} = ?`:`Đặt tính rồi tính ${x} × ${y} nhé.`;
+  if(op===':')return +y<=10&&+x/+y<=10?`${y} × mấy = ${x}?`:`Đặt tính rồi tính ${x} : ${y} nhé.`;
+  return`Đặt tính rồi tính ${x} ${op} ${y} nhé.`;
+}
+// Mỗi bài toán: {text, vis, ops, ans, unit, lead, opHint} (một bước), hoặc
+// {text, vis, parts:[{q, ops, ans, unit, lead, opHint}, …]} (giải bằng nhiều bước), hoặc {direct:true, options, ans, explain}.
+function words({name,icon,fixed=[],n,extra=2}){return lv(name,'gt',icon,async ctx=>{
+  const st=ctx.stage,probs=[...(typeof fixed==='function'?fixed():fixed),...(n?wordRandom(n,extra):[])];
+  const partsOf=p=>p.parts||[{ops:p.ops,ans:p.ans,unit:p.unit,lead:p.lead,opHint:p.opHint}];
+  const total=probs.reduce((a,p)=>a+(p.direct?1:partsOf(p).length*2),0);let done=0;
   st.innerHTML=`<div class="card prob" id="pb"></div><div id="np" hidden></div>`;
   const pb=$('#pb',st),npHost=$('#np',st),np=numpad(ctx,npHost);
   for(let i=0;i<probs.length;i++){
     const p=probs[i],last=i===probs.length-1;
     pb.innerHTML=`<div class="prob-no">Bài toán ${i+1} / ${probs.length}</div><p class="prob-t">${p.text}</p><div id="vis">${vis(p.vis)}</div>
-      <div><div class="step-l">${p.direct?'Con chọn câu trả lời đúng:':'① Con chọn phép tính đúng:'}</div><div class="choices" id="ops"></div></div><div id="sol" hidden></div>`;
+      <div id="opw"><div class="step-l" id="opl"></div><div class="choices" id="ops"></div></div><div id="sol" hidden></div>`;
     $('#playScroll').scrollTop=0;npHost.hidden=true;
     ctx.say(p.text);
-    const sol=$('#sol',pb);
+    const sol=$('#sol',pb),opl=$('#opl',pb),opsEl=$('#ops',pb);
     if(p.direct){
-      await askChoice(ctx,$('#ops',pb),p.options,p.ans,{hint:p.opHint,cls:'small'});
+      opl.textContent='Con chọn câu trả lời đúng:';
+      await askChoice(ctx,opsEl,p.options,p.ans,{hint:p.opHint,cls:'small'});
       if(!ctx.alive)return;done++;ctx.progress(done/total);
       sol.hidden=false;sol.innerHTML=`<div class="sol-box">${p.explain}</div>`;
       if(p.after)$('#vis',pb).innerHTML=vis(p.after);
       ctx.say(p.explain);
     }else{
-      await askChoice(ctx,$('#ops',pb),shuffle(p.ops),p.ops[0],{hint:p.opHint,cls:'small'});
-      if(!ctx.alive)return;done++;ctx.progress(done/total);
-      sol.hidden=false;
-      sol.innerHTML=`<div class="step-l">② Con tính và điền kết quả:</div><div class="sol-box"><div class="sol-t">Bài giải</div><div>${p.lead}</div><div class="sol-eq">${p.ops[0]} = <b class="box">?</b> (${p.unit})</div><div class="sol-ans" hidden>Đáp số: ${p.ans} ${p.unit}.</div></div>`;
-      npHost.hidden=false;np.setTarget($('.box',sol));
-      ctx.say(`${p.ops[0]} bằng bao nhiêu?`);
-      sol.scrollIntoView({behavior:reduced?'auto':'smooth',block:'start'});
-      const [x,op,y]=p.ops[0].split(' ');
-      await askNum(ctx,np,p.ans,{hint:()=>op==='×'?`Nhớ bảng nhân: ${x} × ${y} = ?`:op===':'?`${y} × mấy = ${x}?`:`Đặt tính rồi tính ${x} ${op} ${y} nhé.`});
-      if(!ctx.alive)return;done++;ctx.progress(done/total);
-      npHost.hidden=true;$('.sol-ans',sol).hidden=false;
+      const P=partsOf(p),multi=P.length>1;
+      sol.innerHTML=`<div class="step-l">Con tính và điền kết quả:</div><div class="sol-box" id="sb"><div class="sol-t">Bài giải</div></div>`;
+      const sb=$('#sb',sol);
+      for(let j=0;j<P.length;j++){
+        const part=P[j];
+        $('#opw',pb).hidden=false;
+        opl.innerHTML=multi?`<span class="stepn">Bước ${j+1}</span> ${part.q||'Con chọn phép tính đúng:'}`:'① Con chọn phép tính đúng:';
+        if(multi)ctx.say(part.q||`Bước ${j+1}: con chọn phép tính đúng.`);
+        await askChoice(ctx,opsEl,shuffle(part.ops),part.ops[0],{hint:part.opHint,cls:'small'});
+        if(!ctx.alive)return;done++;ctx.progress(done/total);
+        $('#opw',pb).hidden=true;sol.hidden=false;
+        sb.appendChild(h(`<div><div>${part.lead}</div><div class="sol-eq">${part.ops[0]} = <b class="box">?</b>${part.unit?` (${part.unit})`:''}</div></div>`));
+        npHost.hidden=false;np.setTarget($$('.box',sb).pop());
+        ctx.say(`${part.ops[0]} bằng bao nhiêu?`);
+        sol.scrollIntoView({behavior:reduced?'auto':'smooth',block:'start'});
+        await askNum(ctx,np,part.ans,{hint:()=>opNumHint(part.ops[0])});
+        if(!ctx.alive)return;done++;ctx.progress(done/total);
+        npHost.hidden=true;
+      }
+      const fin=P[P.length-1];
+      const dap=`${fin.ans}${fin.unit?' '+fin.unit:''}`;
+      sb.appendChild(h(`<div class="sol-ans">Đáp số: ${dap}.</div>`));
       if(p.after)$('#vis',pb).innerHTML=vis(p.after);
-      ctx.say(`Đáp số: ${p.ans} ${p.unit}. ${last?'Con giải hết rồi!':'Sang bài tiếp nhé!'}`);
+      ctx.say(`Đáp số: ${dap}. ${last?'Con giải hết rồi!':'Sang bài tiếp nhé!'}`);
     }
     await new Promise(res=>{const row=h(`<div class="next-row"><button class="btn go">${last?'Hoàn thành ➜':'Bài tiếp theo ➜'}</button></div>`);$('button',row).onclick=res;sol.appendChild(row);row.scrollIntoView({behavior:reduced?'auto':'smooth',block:'nearest'})});
     if(!ctx.alive)return;
@@ -758,31 +833,83 @@ function sortLv({name,icon,rounds}){return lv(name,'lt',icon,async ctx=>{
   ctx.finish();
 })}
 
-/* ----- Đặt tính rồi tính (Bài 8) ----- */
+/* ----- Đặt tính rồi tính: cộng, trừ, nhân (Bài 8, 23, 36) và chia (Bài 26, 37) ----- */
+const OPS={'+':'+','−':'−','-':'−','×':'×',':':':'};
+// số ô phải điền của một phép tính, để tính thanh tiến độ
+function colCells([x,op,y]){
+  if(op===':')return divSteps(x,y).length*2;
+  return String(op==='+'?x+y:op==='×'?x*y:x-y).length;
+}
+function divSteps(x,d){
+  const ds=String(x).split('').map(Number),out=[];
+  let k=0,cur=ds[0];while(cur<d&&k<ds.length-1){k++;cur=cur*10+ds[k]}
+  let rem=0;
+  for(let i=k;i<ds.length;i++){if(i>k)cur=rem*10+ds[i];const q=Math.floor(cur/d);rem=cur-q*d;out.push({i,cur,q,rem})}
+  return out;
+}
+// Một phép tính dọc. tick() được gọi sau mỗi ô điền đúng.
+async function colOne(ctx,host,np,[x,op,y],tick=()=>{}){
+  op=OPS[op];
+  if(op===':')return divOne(ctx,host,np,x,y,tick);
+  const r=op==='+'?x+y:op==='×'?x*y:x-y,sx=String(x),sy=String(y),sr=String(r),C=Math.max(sx.length,sy.length,sr.length);
+  const cells=s=>{const a=['<span></span>'];for(let i=0;i<C;i++){const j=i-(C-s.length);a.push(`<span>${j>=0?s[j]:''}</span>`)}return a.join('')};
+  let res='<span></span>';for(let i=0;i<C;i++){const j=i-(C-sr.length);res+=j>=0?`<span><b class="box idle" data-c="${C-1-i}">?</b></span>`:'<span></span>'}
+  host.innerHTML=`<div class="colc-wrap"><div class="colc" style="--c:${C+1}">${cells(sx)}${cells(sy).replace('<span></span>',`<span class="sg">${op}</span>`)}<span class="ln"></span>${res}</div></div>`;
+  ctx.say(`Đặt tính rồi tính: ${x} ${op} ${y}`);
+  let carry=0;
+  for(let c=0;c<sr.length;c++){
+    const dx=+(sx[sx.length-1-c]||0),dy=+(sy[sy.length-1-c]||0);
+    let digit,hint;
+    if(op==='+'){const s=dx+dy+carry;digit=s%10;hint=`${dx} + ${dy}${carry?' thêm 1 (nhớ)':''} = ${s}, viết ${s%10}${s>9?', nhớ 1':''}.`;carry=s>9?1:0}
+    else if(op==='×'){
+      if(c<sx.length){const s=dx*y+carry;digit=s%10;hint=`${dx} nhân ${y} bằng ${dx*y}${carry?`, thêm ${carry} bằng ${s}`:''}, viết ${s%10}${s>9?`, nhớ ${Math.floor(s/10)}`:''}.`;carry=Math.floor(s/10)}
+      else{digit=carry;hint=`Hết chữ số để nhân, viết số nhớ ${carry}.`;carry=0}
+    }
+    else{const sub=dy+carry;if(dx<sub){digit=dx+10-sub;hint=`${dx} không trừ được ${sub}, lấy 1${dx} trừ ${sub} bằng ${digit}, viết ${digit}, nhớ 1.`;carry=1}else{digit=dx-sub;hint=`${carry?`${dy} thêm 1 bằng ${sub}; `:''}${dx} trừ ${sub} bằng ${digit}, viết ${digit}.`;carry=0}}
+    const box=$(`[data-c="${c}"]`,host);box.classList.remove('idle');np.setTarget(box);
+    ctx.say(['Hàng đơn vị','Hàng chục','Hàng trăm','Hàng nghìn'][c]+': viết chữ số nào?');
+    await askNum(ctx,np,digit,{hint,hintAfter:1});
+    if(!ctx.alive)return;
+    ctx.say(hint);tick();
+  }
+  ctx.say(`${x} ${op} ${y} = ${r}. Giỏi lắm!`);
+}
+// Chia theo cách viết của sách: chỉ ghi số dư rồi hạ chữ số tiếp theo.
+async function divOne(ctx,host,np,x,d,tick){
+  const sx=String(x),n=sx.length,S=divSteps(x,d),Q=Math.floor(x/d),R=x%d;
+  const rows=S.length+1;
+  let L='';
+  for(let r=0;r<rows;r++)for(let c=0;c<n;c++){
+    let v='';
+    if(r===0)v=sx[c];
+    else{const st=S[r-1];if(c===st.i)v=`<b class="box idle" data-r="${r}">?</b>`;else if(r<S.length&&c===st.i+1)v=`<i class="dn" data-d="${r}">${sx[c]}</i>`}
+    L+=`<span>${v}</span>`;
+  }
+  host.innerHTML=`<div class="colc-wrap"><div class="divc"><div class="divl" style="--c:${n};--r:${rows}">${L}</div><div class="divr"><span class="dv-d">${d}</span><span class="dv-q">${S.map((_,j)=>`<b class="box idle" data-q="${j}">?</b>`).join('')}</span></div></div></div>`;
+  ctx.say(`Đặt tính rồi tính: ${x} : ${d}`);
+  for(let j=0;j<S.length;j++){
+    const {cur,q,rem}=S[j];
+    let box=$(`[data-q="${j}"]`,host);box.classList.remove('idle');np.setTarget(box);
+    ctx.say(j===0?`${cur} chia ${d} được mấy?`:`Hạ ${sx[S[j].i]}, được ${cur}. ${cur} chia ${d} được mấy?`);
+    await askNum(ctx,np,q,{hint:`${d} × ${q} = ${d*q}${q<9?`, ${d} × ${q+1} = ${d*(q+1)} lớn hơn ${cur}`:''}. Vậy ${cur} chia ${d} được ${q}.`,hintAfter:1});
+    if(!ctx.alive)return;tick();
+    box=$(`[data-r="${j+1}"]`,host);box.classList.remove('idle');np.setTarget(box);
+    ctx.say(`${q} nhân ${d} bằng ${q*d}; ${cur} trừ ${q*d} bằng mấy?`);
+    await askNum(ctx,np,rem,{hint:`${cur} − ${q*d} = ${rem}.`,hintAfter:1});
+    if(!ctx.alive)return;tick();
+    const dn=$(`[data-d="${j+1}"]`,host);if(dn)dn.classList.add('on');
+  }
+  ctx.say(`${x} : ${d} = ${Q}${R?` (dư ${R})`:''}. Giỏi lắm!`);
+}
 function colCalc({name,icon,probs}){return lv(name,'lt',icon,async ctx=>{
   const st=ctx.stage,P=typeof probs==='function'?probs():probs;
-  const digits=P.map(([x,op,y])=>String(op==='+'?x+y:x-y).length),TOT=digits.reduce((a,b)=>a+b,0);let done=0;
-  st.innerHTML=`<p class="lbl">Tính từ phải sang trái: hàng đơn vị, rồi hàng chục, rồi hàng trăm.</p><div class="colc-wrap" id="cw"></div><div id="np"></div>`;
+  const TOT=P.reduce((a,p)=>a+colCells(p),0);let done=0;
+  const hasDiv=P.some(p=>p[1]===':'),hasRest=P.some(p=>p[1]!==':');
+  st.innerHTML=`<p class="lbl">${hasRest?'Cộng, trừ, nhân: tính từ phải sang trái. ':''}${hasDiv?'Chia: tính từ trái sang phải.':''}</p><div id="cw"></div><div id="np"></div>`;
   const cw=$('#cw',st),np=numpad(ctx,$('#np',st),{max:1,auto:true});
-  for(const [x,op,y] of P){
-    const r=op==='+'?x+y:x-y,sx=String(x),sy=String(y),sr=String(r),C=Math.max(sx.length,sy.length,sr.length);
-    const cells=(s,pre='')=>{const a=[pre];for(let i=0;i<C;i++){const j=i-(C-s.length);a.push(j>=0?s[j]:'')}return a.map(c=>`<span>${c}</span>`).join('')};
-    let res='<span></span>';for(let i=0;i<C;i++){const j=i-(C-sr.length);res+=j>=0?`<span><b class="box idle" data-c="${C-1-i}">?</b></span>`:'<span></span>'}
-    cw.innerHTML=`<div class="colc" style="--c:${C+1}">${cells(sx)}${cells(sy,'').replace('<span></span>',`<span class="sg">${op==='+'?'+':'−'}</span>`)}<span class="ln"></span>${res}</div>`;
-    ctx.say(`Đặt tính rồi tính: ${x} ${op==='+'?'+':'−'} ${y}`);
-    let carry=0;
-    for(let c=0;c<sr.length;c++){
-      const dx=+(sx[sx.length-1-c]||0),dy=+(sy[sy.length-1-c]||0);
-      let digit,hint;
-      if(op==='+'){const s=dx+dy+carry;digit=s%10;hint=`${dx} + ${dy}${carry?' thêm 1 (nhớ)':''} = ${s}, viết ${s%10}${s>9?', nhớ 1':''}.`;carry=s>9?1:0}
-      else{const sub=dy+carry;if(dx<sub){digit=dx+10-sub;hint=`${dx} không trừ được ${sub}, lấy 1${dx} trừ ${sub} bằng ${digit}, viết ${digit}, nhớ 1.`;carry=1}else{digit=dx-sub;hint=`${carry?`${dy} thêm 1 bằng ${sub}; `:''}${dx} trừ ${sub} bằng ${digit}, viết ${digit}.`;carry=0}}
-      const box=$(`[data-c="${c}"]`,cw);box.classList.remove('idle');np.setTarget(box);
-      ctx.say(['Hàng đơn vị','Hàng chục','Hàng trăm','Hàng nghìn'][c]+': viết chữ số nào?');
-      await askNum(ctx,np,digit,{hint,hintAfter:1});
-      if(!ctx.alive)return;
-      ctx.say(hint);done++;ctx.progress(done/TOT);
-    }
-    ctx.say(`${x} ${op==='+'?'+':'−'} ${y} = ${r}. Giỏi lắm!`);
+  for(const p of P){
+    await colOne(ctx,cw,np,p,()=>{done++;ctx.progress(done/TOT)});
+    if(!ctx.alive)return;
     await ctx.sleep(1500);if(!ctx.alive)return;
   }
   ctx.finish();
@@ -1156,7 +1283,6 @@ const LESSONS=[
 ]},
 ];
 
-/* chuyển hình dán kiểu cũ (lưu theo biểu tượng) sang kiểu mới (lưu theo màn chơi) */
 
 /* ---------- settings & notes ---------- */
 function openSettings(){
@@ -1189,16 +1315,7 @@ function confirmWipe(){
   };
 }
 function openNotes(){
-  openModal(`<h2>Sổ tay Bài ${curLesson.id}</h2>${curLesson.note()}<button class="btn go" id="nClose">Đóng</button>`);
+  openModal(`<h2>Sổ tay ${lessonTab(curLesson)}</h2>${curLesson.note()}<button class="btn go" id="nClose">Đóng</button>`);
   $('#nClose').onclick=closeModal;
 }
 
-/* ---------- wiring ---------- */
-$('#btnSettings').onclick=openSettings;
-$('#btnNote').onclick=openNotes;
-$('#lessonBack').onclick=()=>{show('home');renderHome()};
-$('#playBack').onclick=exitLevel;
-wirePet();
-$('#btnRead').onclick=()=>speak($('#bubble').textContent);
-if('speechSynthesis' in window)speechSynthesis.getVoices();
-renderHome();

@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 python3 - <<'PY'
 import hashlib,json,os,shutil
 s=open('src/shell.html').read().replace('/*EXTRA_CSS*/',open('src/extra.css').read()+open('src/pet.css').read())
-s+='<script>\n'+open('src/pet.js').read()+'\n'+open('src/game.js').read()+'\n</script>\n'
+s+='<script>\n'+'\n'.join(open('src/'+f).read() for f in ['pet.js','game.js','kit-hk1.js','bai13-22.js','bai1-4.js','bai23-35.js','bai36-44.js','on-thi-hk1.js','main.js'])+'\n</script>\n'
 open('app.html','w').write(s)
 head,rest=s.split('</style>',1)
 meta='<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#7CCBFF">\n'

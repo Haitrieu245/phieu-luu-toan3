@@ -15,6 +15,16 @@ const OUTFITS=[
   {id:'bow',e:'🎀',n:'Nơ xinh',slot:'hat'},{id:'cap',e:'🧢',n:'Mũ lưỡi trai',slot:'hat'},{id:'nerd',e:'👓',n:'Kính cận',slot:'glasses'},
   {id:'scarf',e:'🧣',n:'Khăn quàng',slot:'neck'},{id:'sunhat',e:'👒',n:'Mũ rộng vành',slot:'hat'},{id:'shades',e:'🕶️',n:'Kính râm',slot:'glasses'},
   {id:'tophat',e:'🎩',n:'Mũ ảo thuật',slot:'hat'},{id:'crown',e:'👑',n:'Vương miện',slot:'hat'},
+  // Bài 13–44 và ôn thi học kì 1
+  {id:'flower',e:'🌸',n:'Hoa cài tóc',slot:'hat'},{id:'medal',e:'🏅',n:'Huy chương',slot:'neck'},{id:'goggles',e:'🥽',n:'Kính bơi',slot:'glasses'},
+  {id:'grad',e:'🎓',n:'Mũ tốt nghiệp',slot:'hat'},{id:'bell',e:'🔔',n:'Chuông nhỏ',slot:'neck'},{id:'clover',e:'🍀',n:'Cỏ bốn lá',slot:'hat'},
+  {id:'helmet',e:'⛑️',n:'Mũ cứu hộ',slot:'hat'},{id:'beads',e:'📿',n:'Vòng hạt',slot:'neck'},{id:'butterfly',e:'🦋',n:'Bướm cài tóc',slot:'hat'},
+  {id:'sunflower',e:'🌻',n:'Hoa hướng dương',slot:'hat'},{id:'ribbon',e:'🎗️',n:'Ruy băng',slot:'neck'},{id:'star',e:'⭐',n:'Ngôi sao',slot:'hat'},
+  {id:'mask',e:'🤿',n:'Kính lặn',slot:'glasses'},{id:'military',e:'🎖️',n:'Huân chương',slot:'neck'},{id:'cherry',e:'🍒',n:'Kẹp tóc anh đào',slot:'hat'},
+  {id:'tulip',e:'🌷',n:'Hoa tu-líp',slot:'hat'},{id:'shell',e:'🐚',n:'Vòng vỏ sò',slot:'neck'},{id:'maple',e:'🍁',n:'Lá phong',slot:'hat'},
+  {id:'rainbow',e:'🌈',n:'Cầu vồng',slot:'hat'},{id:'heart',e:'💖',n:'Mặt dây trái tim',slot:'neck'},{id:'snow',e:'❄️',n:'Bông tuyết',slot:'hat'},
+  {id:'moon',e:'🌙',n:'Trăng khuyết',slot:'hat'},{id:'gem',e:'💎',n:'Viên kim cương',slot:'neck'},{id:'balloon',e:'🎈',n:'Bóng bay',slot:'hat'},
+  {id:'trophy',e:'🏆',n:'Cúp vô địch',slot:'neck'},
 ];
 const OUTFIT=Object.fromEntries(OUTFITS.map(o=>[o.id,o]));
 const PET_RATE={hunger:4,thirst:5};   // điểm giảm mỗi giờ
