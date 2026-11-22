@@ -203,3 +203,9 @@
 .tbl th,.tbl td{border:2px solid var(--ink);padding:6px 6px;text-align:center;min-width:48px}
 .tbl th{background:var(--sky-2);font-size:15px;font-family:var(--body)}
 .tbl .box{min-width:44px}
+/* Lời giải chi tiết sau mỗi câu (Ôn tập theo phiếu) */
+.sol-ex{text-align:left;width:100%;margin-top:12px;background:#EAF7FF;border-color:#A9DDF7}
+.sol-ex .sol-t{text-decoration:none;color:var(--ink-2);margin-bottom:4px}
+.sol-ex p{margin:4px 0}
+.sol-ex .sol-eq{font-size:20px}
+.q-lines{display:grid;gap:6px;justify-items:center;margin:8px 0}

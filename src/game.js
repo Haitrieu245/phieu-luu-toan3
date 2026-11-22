@@ -684,7 +684,7 @@ function quiz(name,kind,icon,makeQs,intro,opt={}){return lv(name,kind,icon,async
   if(intro){ctx.say(intro)}
   for(let i=0;i<qs.length;i++){
     const q=qs[i],m0=ctx.mistakes;
-    qz.innerHTML=`<div class="prob-no">${q.part?`<span class="part">${q.part}</span> `:''}Câu ${i+1} / ${qs.length}${opt.exam&&q.pts?` <span class="pts">(${String(q.pts).replace('.',',')} điểm)</span>`:''}</div>${q.html||''}<div class="choices" id="qc"></div><div id="qcol"></div>`;
+    qz.innerHTML=`<div class="prob-no">${q.part?`<span class="part">${q.part}</span> `:''}${q.no??`Câu ${i+1} / ${qs.length}`}${opt.exam&&q.pts?` <span class="pts">(${String(q.pts).replace('.',',')} điểm)</span>`:''}</div>${q.html||''}<div class="choices" id="qc"></div><div id="qcol"></div>`;
     $('#playScroll').scrollTop=0;
     if(q.say||i>0||!intro)ctx.say(q.say||q.html.replace(/<svg[\s\S]*?<\/svg>/g,'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());
     npHost.hidden=npcHost.hidden=true;
@@ -705,6 +705,15 @@ function quiz(name,kind,icon,makeQs,intro,opt={}){return lv(name,kind,icon,async
     if(q.pts){maxScore+=q.pts;const m=ctx.mistakes-m0;score+=m===0?q.pts:m===1?q.pts/2:0}
     ctx.progress((i+1)/qs.length);
     if(q.explain){ctx.say(q.explain);await ctx.sleep(q.wait||1700);if(!ctx.alive)return}
+    // Lời giải chi tiết: hiện ngay dưới câu hỏi, chờ con bấm "Câu tiếp"
+    if(q.sol){
+      npHost.hidden=npcHost.hidden=true;
+      const last=i===qs.length-1,box=h(`<div><div class="sol-box sol-ex"><div class="sol-t">💡 Lời giải</div>${q.sol}</div><div class="next-row"><button class="btn go">${last?'Xem điểm ➜':'Câu tiếp ➜'}</button></div></div>`);
+      qz.appendChild(box);$('#bubble').innerHTML='Con xem lời giải bên dưới nhé! 👇';if(S.autoRead)speak(q.sol);
+      box.scrollIntoView({behavior:reduced?'auto':'smooth',block:'nearest'});
+      await new Promise(res=>{$('button',box).onclick=res});
+      if(!ctx.alive)return;
+    }
   }
   if(opt.exam){
     const sc=Math.round(score/maxScore*20)/2,txt=String(sc).replace('.',',');
